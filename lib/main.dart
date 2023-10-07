@@ -1,111 +1,112 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:math';
 
 void main() {
-  runApp(const MyApp());
+  runApp(MemoriaApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
+class MemoriaApp extends StatelessWidget {
   @override
-
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Memoria',
       theme: ThemeData(
-
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+        primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  _MyHomePageState createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  List<int> cardNumbers = [1, 2, 3, 4, 1, 2, 3, 4]; // カードの数値
+  List<bool> cardFlips = List.filled(8, false); // カードのめくられた状態
+  int firstCardIndex = -1; // 最初に選択したカードのインデックス
+  int secondCardIndex = -1; // 2番目に選択したカードのインデックス
+  bool isChecking = false; // カードを比較中かどうか
 
-  void _incrementCounter() {
+  @override
+  void initState() {
+    super.initState();
+    cardNumbers.shuffle(); // カードの数値をランダムにシャッフル
+  }
+
+  void _flipCard(int index) {
+    if (isChecking || cardFlips[index]) {
+      return; // カードを比較中または既にめくられたカードは無視
+    }
+
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      cardFlips[index] = true; // カードをめくる
     });
+
+    if (firstCardIndex == -1) {
+      firstCardIndex = index;
+    } else {
+      secondCardIndex = index;
+      isChecking = true;
+      Timer(Duration(seconds: 1), _checkCards); // 1秒後にカードを比較
+    }
+  }
+
+  void _checkCards() {
+    if (cardNumbers[firstCardIndex] == cardNumbers[secondCardIndex]) {
+      // カードが一致した場合
+      setState(() {
+        cardFlips[firstCardIndex] = false;
+        cardFlips[secondCardIndex] = false;
+      });
+    } else {
+      // カードが一致しない場合、カードを戻す
+      setState(() {
+        cardFlips[firstCardIndex] = false;
+        cardFlips[secondCardIndex] = false;
+      });
+    }
+
+    firstCardIndex = -1;
+    secondCardIndex = -1;
+    isChecking = false;
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: Text('Memoria Game'),
       ),
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+        child: GridView.builder(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2, // 2列にする
+          ),
+          itemCount: cardNumbers.length,
+          itemBuilder: (context, index) {
+            return GestureDetector(
+              onTap: () {
+                _flipCard(index);
+              },
+              child: Card(
+                color: cardFlips[index] ? Colors.white : Colors.blue,
+                child: Center(
+                  child: cardFlips[index]
+                      ? Text(
+                    cardNumbers[index].toString(),
+                    style: TextStyle(fontSize: 24),
+                  )
+                      : Text('?', style: TextStyle(fontSize: 24)),
+                ),
+              ),
+            );
+          },
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
